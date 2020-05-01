@@ -1,7 +1,7 @@
 class Task {
-  constructor (source) {
+  constructor (source, options) {
     this.source = source
-    this.bpmnConfig = {}
+    this.bpmnConfig = options
   }
 }
 

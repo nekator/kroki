@@ -16,8 +16,7 @@ class Worker {
     try {
       page.setViewport({ height: 800, width: 600 })
       await page.goto(this.pageUrl)
-      return await page.$eval('#container', (container, bpmnXML, options) => {
-        container.innerHTML = bpmnXML
+      const svg= await page.$eval('#container', (container, bpmnXML, options) => {
         /* global BpmnJS */
         const viewer = new BpmnJS({ container: container })
 
@@ -47,11 +46,25 @@ class Worker {
         }
 
         return loadDiagram().then(() => {
-          return exportSVG()
+          if (options.type === 'svg+xml') {
+            return exportSVG();
+          } else {
+            const canvas = viewer.get('canvas');
+            canvas.zoom('fit-viewport', 'auto');
+          }
         }).catch((err) => {
           throw err
         })
       }, task.source, task.bpmnConfig)
+      switch (task.bpmnConfig.type) {
+        case 'svg+xml':
+          return svg;
+        case 'png':
+        case 'jpeg':
+          return await page.screenshot({omitBackground: true, type: task.bpmnConfig.type})
+        case 'pdf':
+          return await page.pdf({landscape: true, format: 'a4', pageRange: 1, preferCSSPageSize: true})
+      }
     } catch (e) {
       console.error('Unable to convert the diagram', e)
       throw e
